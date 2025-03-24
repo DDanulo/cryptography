@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Pos?>
+
+<AnchorPane xmlns:fx="http://javafx.com/fxml" fx:controller="org.example.aes.view.AesApplicationController">
+    <VBox alignment="CENTER" spacing="10" padding="20">
+        <Label text="Input Data (hex):"/>
+        <TextField fx:id="inputField" promptText="Input Data (hex)"/>
+
+        <Label text="Encryption Key (hex):"/>
+        <TextField fx:id="keyField" promptText="Encryption Key (hex)"/>
+
+        <Label text="Key Size:"/>
+        <ComboBox fx:id="keySizeComboBox" maxWidth="100"/>
+
+        <Button text="Encrypt" onAction="#handleEncryptAction"/>
+
+        <Label text="Encrypted Data (hex):"/>
+        <TextArea fx:id="resultArea" editable="false" promptText="Encrypted Data (hex)" prefRowCount="10" prefColumnCount="40"/>
+    </VBox>
+</AnchorPane>
+
