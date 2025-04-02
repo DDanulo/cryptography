@@ -2,11 +2,38 @@ package org.example.aes.logic;
 
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 class AesTest {
 //39 02 dc 19
 //25 dc 11 6a
 //84 09 85 0b
 //1d fb 97 32
+
+
+    @Test
+    void encryptionAndDecryptionTest() {
+        byte[] inputData = new byte[] {
+                (byte)0x00, (byte)0x11, (byte)0x22, (byte)0x33,
+                (byte)0x44, (byte)0x55, (byte)0x66, (byte)0x77,
+                (byte)0x88, (byte)0x99, (byte)0xAA, (byte)0xBB,
+                (byte)0xCC, (byte)0xDD, (byte)0xEE, (byte)0xFF, (byte)0x12
+        };
+        byte[] key = new byte[] {
+                (byte)0x00, (byte)0x01, (byte)0x02, (byte)0x03,
+                (byte)0x04, (byte)0x05, (byte)0x06, (byte)0x07,
+                (byte)0x08, (byte)0x09, (byte)0x0A, (byte)0x0B,
+                (byte)0x0C, (byte)0x0D, (byte)0x0E, (byte)0x0F,
+                (byte)0x10, (byte)0x11, (byte)0x12, (byte)0x13,
+                (byte)0x14, (byte)0x15, (byte)0x16, (byte)0x17,
+                //00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f 10 11 12 13 14 15 16 17
+        };
+        Aes aes = new Aes(KeyParam.SIZE_192, inputData, key);
+        byte[] res = aes.doEncryption();
+        Aes aes1 = new Aes(KeyParam.SIZE_192, res, key);
+        byte[] decrypted = aes1.doDecryption();
+        assertArrayEquals(inputData, decrypted);
+    }
 
     @Test
     void encryptionTest192() {

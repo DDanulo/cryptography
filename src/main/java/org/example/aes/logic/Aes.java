@@ -1,6 +1,5 @@
 package org.example.aes.logic;
 
-import java.sql.PreparedStatement;
 import java.util.Arrays;
 
 public class Aes {
@@ -78,8 +77,15 @@ public class Aes {
     };
 
 
+    /**
+     * creates an object that will hold input data and key.
+     * Also defines the nR and nK parameters of AES algorithm depending on key parameter.
+     * @param keyParam which key length AES should use
+     * @param inputData byte array of data to encrypt/decrypt
+     * @param key byte array of key for encryption/decryption
+     */
     public Aes(KeyParam keyParam, byte[] inputData, byte[] key) {
-        this.inputData = inputData;
+        this.inputData = Helper.addPadding(inputData);;
         this.key = key;
         numberOfRounds = switch (keyParam) {
             case SIZE_128 -> 10;
@@ -91,9 +97,14 @@ public class Aes {
             case SIZE_192 -> 6;
             case SIZE_256 -> 8;
         };
-
     }
 
+    /**
+     * method to encrypt data
+     * to use you need to create an AES object, pass the key and the input data in the constructor,
+     * then call this method
+     * @return byte[] array of encrypted data
+     */
     public byte[] doEncryption() {
         int dataLength = inputData.length;
         double amountOfBlocks = Math.ceil((double) dataLength / 16);
@@ -139,6 +150,57 @@ public class Aes {
         return result;
     }
 
+    /**
+     * method to decrypt data
+     * to use you need to create an AES object, pass the key and the input data in the constructor,
+     * then call this method
+     * @return byte[] array of decryptedData
+     */
+    public byte[] doDecryption(){
+        int dataLength = inputData.length;
+        double amountOfBlocks = Math.ceil((double) dataLength / 16);
+        byte[][][] state = new byte[(int) amountOfBlocks][4][4];
+
+        for (int i = 0; i < amountOfBlocks; i++) {
+            for (int j = 0; j < 16; j++) {
+                state[i][j % 4][j / 4] = inputData[i * 16 + j];
+            }
+        }
+
+        byte[][] keys = new byte[(int) (nK * (numberOfRounds + 1))][4];
+        for (int i = 0; i < nK; i++) {
+            keys[i][0] = key[i * 4];
+            keys[i][1] = key[i * 4 + 1];
+            keys[i][2] = key[i * 4 + 2];
+            keys[i][3] = key[i * 4 + 3];
+        }
+        keys = expandKeys(keys);
+        byte[] result = new byte[dataLength];
+        for (int i = 0; i < amountOfBlocks; i++) {
+            state[i] = addRoundKey(state[i], keys, numberOfRounds);
+            for (int k = numberOfRounds-1; k >= 0; k--) {
+                state[i][1] = rotWord(state[i][1], 3);
+                state[i][2] = rotWord(state[i][2], 2);
+                state[i][3] = rotWord(state[i][3], 1);
+                state[i] = invSubWord(state[i]);
+                state[i] = addRoundKey(state[i], keys, k);
+                if (k != 0) {
+                    state[i] = invMixCol(state[i]);
+                }
+            }
+        }
+        int index = 0;
+        for (int i = 0; i < state.length; i++) {
+            for (int k = 0; k < state[0].length; k++) {
+                for (int l = 0; l < state[0][0].length; l++) {
+                    result[index++] = state[i][l][k];
+                }
+            }
+        }
+        result = Helper.removePadding(result);
+        return result;
+    }
+
     private byte[][] mixCol(byte[][] input) {
         int[] result = new int[4];
         for (int j = 0; j < 4; j++) {
@@ -146,6 +208,20 @@ public class Aes {
             result[1] = input[0][j] ^ xTimes2(input[1][j]) ^ xTimes3(input[2][j]) ^ input[3][j];
             result[2] = input[0][j] ^ input[1][j] ^ xTimes2(input[2][j]) ^ xTimes3(input[3][j]);
             result[3] = xTimes3(input[0][j]) ^ input[1][j] ^ input[2][j] ^ xTimes2(input[3][j]);
+            for (int i = 0; i < 4; i++) {
+                input[i][j] = (byte) result[i];
+            }
+        }
+        return input;
+    }
+
+    private byte[][] invMixCol(byte[][] input) {
+        int[] result = new int[4];
+        for (int j = 0; j < 4; j++) {
+            result[0] = xTimes14(input[0][j]) ^ xTimes11(input[1][j]) ^ xTimes13(input[2][j]) ^ xTimes9(input[3][j]);
+            result[1] = xTimes9(input[0][j]) ^ xTimes14(input[1][j]) ^ xTimes11(input[2][j]) ^ xTimes13(input[3][j]);
+            result[2] = xTimes13(input[0][j]) ^ xTimes9(input[1][j]) ^ xTimes14(input[2][j]) ^ xTimes11(input[3][j]);
+            result[3] = xTimes11(input[0][j]) ^ xTimes13(input[1][j]) ^ xTimes9(input[2][j]) ^ xTimes14(input[3][j]);
             for (int i = 0; i < 4; i++) {
                 input[i][j] = (byte) result[i];
             }
@@ -164,6 +240,22 @@ public class Aes {
 
     byte xTimes3(byte x) {
         return (byte) (xTimes2(x) ^ x);
+    }
+
+    byte xTimes9(byte x) {
+        return (byte) ((xTimes2(xTimes2(xTimes2(x)))) ^ x);
+    }
+
+    byte xTimes11(byte x){
+        return (byte) (xTimes2((byte) (xTimes2(xTimes2(x)) ^ x)) ^ x);
+    }
+
+    byte xTimes13(byte x){
+        return (byte) (xTimes2(xTimes2((byte) (xTimes2(x) ^ x))) ^ x);
+    }
+
+    byte xTimes14(byte x){
+        return xTimes2((byte) (xTimes2((byte) (xTimes2(x) ^ x)) ^ x));
     }
 
     byte[][] addRoundKey(byte[][] state, byte[][] key, int round) {
@@ -217,10 +309,18 @@ public class Aes {
     }
 
     public static byte[][] subWord(byte[][] input) {
+        return getBytes(input, SBOX);
+    }
+
+    public static byte[][] invSubWord(byte[][] input) {
+        return getBytes(input, INV_SBOX);
+    }
+
+    private static byte[][] getBytes(byte[][] input, int[] invSbox) {
         byte[][] result = new byte[input.length][input[0].length];
         for (int i = 0; i < input.length; i++) {
             for (int j = 0; j < input[0].length; j++) {
-                result[i][j] = (byte) SBOX[input[i][j] & 0xff];
+                result[i][j] = (byte) invSbox[input[i][j] & 0xff];
             }
         }
         return result;
