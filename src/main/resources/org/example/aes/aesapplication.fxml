@@ -17,24 +17,24 @@
     <Label text="Klucz AES:"/>
     <TextField fx:id="keyField" promptText="Wprowadź klucz AES (16, 24 lub 32 bajty)"/>
 
-    <!-- Przycisk do szyfrowania -->
-    <Button fx:id="encryptButton" text="Szyfruj" />
+<!--    &lt;!&ndash; Przycisk do szyfrowania &ndash;&gt;-->
+<!--    <Button fx:id="encryptButton" text="Szyfruj" />-->
 
-    <!-- Przycisk do deszyfrowania -->
-    <Button fx:id="decryptButton" text="Deszyfruj" />
+<!--    &lt;!&ndash; Przycisk do deszyfrowania &ndash;&gt;-->
+<!--    <Button fx:id="decryptButton" text="Deszyfruj" />-->
 
-    <!-- Przycisk do zapisania wyników do pliku -->
-    <Button fx:id="saveButton" text="Zapisz do pliku" />
+<!--    &lt;!&ndash; Przycisk do zapisania wyników do pliku &ndash;&gt;-->
+<!--    <Button fx:id="saveButton" text="Zapisz do pliku" />-->
 
-    <!-- Przycisk do wczytania danych z pliku -->
-    <Button fx:id="loadButton" text="Wczytaj z pliku" />
+<!--    &lt;!&ndash; Przycisk do wczytania danych z pliku &ndash;&gt;-->
+<!--    <Button fx:id="loadButton" text="Wczytaj z pliku" />-->
 
-    <!-- Przycisk do generowania klucza AES -->
-    <Button fx:id="generateKeyButton" text="Generuj klucz AES" />
+<!--    &lt;!&ndash; Przycisk do generowania klucza AES &ndash;&gt;-->
+<!--    <Button fx:id="generateKeyButton" text="Generuj klucz AES" />-->
 
-    <!-- Etykieta i pole do wyświetlania wyniku -->
-    <Label text="Wynik:"/>
-    <TextArea fx:id="resultArea" editable="false" prefHeight="100"/>
+<!--    &lt;!&ndash; Etykieta i pole do wyświetlania wyniku &ndash;&gt;-->
+<!--    <Label text="Wynik:"/>-->
+<!--    <TextArea fx:id="resultArea" editable="false" prefHeight="100"/>-->
 
     <!-- Układ przycisków (opcjonalnie) -->
     <HBox spacing="10">

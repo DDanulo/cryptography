@@ -6,14 +6,19 @@ import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.stage.*;
 import org.example.aes.logic.Aes;
+import org.example.aes.logic.Helper;
 import org.example.aes.logic.KeyParam;
 
 import java.io.*;
-import java.nio.file.Files;
-import java.util.Base64;
-import java.security.Key;
+import java.util.Objects;
 
 public class AesApplication extends Application {
+
+    byte[] result;
+    byte[] input;
+    private RadioButton radio128;
+    private RadioButton radio192;
+    private RadioButton radio256;
 
     @Override
     public void start(Stage primaryStage) {
@@ -37,95 +42,85 @@ public class AesApplication extends Application {
         TextArea resultArea = new TextArea();
         resultArea.setEditable(false);
 
-        // Funkcja szyfrowania po kliknięciu przycisku
-        encryptButton.setOnAction(e -> {
-            try {
-                String inputData = inputDataField.getText();
-                String keyText = keyField.getText();
 
+        // Create and configure radio buttons
+        this.radio128 = new RadioButton("128-bit key");
+        this.radio192 = new RadioButton("192-bit key");
+        this.radio256 = new RadioButton("256-bit key");
+
+        // Put them in a toggle group so only one is selected
+        ToggleGroup keySizeGroup = new ToggleGroup();
+        radio128.setToggleGroup(keySizeGroup);
+        radio192.setToggleGroup(keySizeGroup);
+        radio256.setToggleGroup(keySizeGroup);
+
+        // Choose 128-bit by default
+        radio128.setSelected(true);
+        // Funkcja szyfrowania po kliknięciu przycisku
+        encryptButton.setOnAction(_ -> {
+            try {
+                String keyText = keyField.getText();
+                byte[] inputBytes;
                 // Konwertowanie danych wejściowych na bajty
-                byte[] inputBytes = inputData.getBytes();
+                inputBytes = Objects.requireNonNullElseGet(input, () -> inputDataField.getText().getBytes());
                 byte[] keyBytes = keyText.getBytes();
 
-                // Sprawdzenie długości klucza
-                if (keyBytes.length != 16 && keyBytes.length != 24 && keyBytes.length != 32) {
+                // Wybór rozmiaru klucza
+                KeyParam keyParam = chooseKeyParam(keyBytes.length);
+                if (keyParam == null){
                     resultArea.setText("Klucz musi mieć 16, 24 lub 32 bajty.");
                     return;
                 }
 
-                // Wybór rozmiaru klucza
-                KeyParam keyParam;
-                if (keyBytes.length == 16) {
-                    keyParam = KeyParam.SIZE_128;
-                } else if (keyBytes.length == 24) {
-                    keyParam = KeyParam.SIZE_192;
-                } else {
-                    keyParam = KeyParam.SIZE_256;
-                }
 
                 // Inicjalizacja algorytmu AES
-                Aes aes = new Aes(keyParam, keyBytes);
+                Aes aes = new Aes(keyParam, inputBytes, keyBytes);
 
                 // Wykonanie szyfrowania
-                byte[] encryptedData = aes.doEncryption(inputBytes);
-
+                byte[] encryptedData = aes.doEncryption();
+                result = encryptedData;
                 // Konwersja wyniku do postaci hex
-                StringBuilder hexResult = new StringBuilder();
-                for (byte b : encryptedData) {
-                    hexResult.append(String.format("%02X", b));
-                }
 
+                String encText = Helper.bytesToHex(encryptedData);
                 // Wyświetlenie wyniku
-                resultArea.setText(hexResult.toString());
+                resultArea.setText(encText);
+                input = null;
             } catch (Exception ex) {
                 resultArea.setText("Wystąpił błąd: " + ex.getMessage());
             }
         });
 
         // Funkcja deszyfrowania po kliknięciu przycisku
-        decryptButton.setOnAction(e -> {
+        decryptButton.setOnAction(_ -> {
             try {
-                String encryptedDataHex = resultArea.getText();
                 String keyText = keyField.getText();
-
-                // Konwertowanie danych wejściowych (w postaci hex) na bajty
-                byte[] encryptedData = new byte[encryptedDataHex.length() / 2];
-                for (int i = 0; i < encryptedData.length; i++) {
-                    encryptedData[i] = (byte) Integer.parseInt(encryptedDataHex.substring(i * 2, i * 2 + 2), 16);
-                }
                 byte[] keyBytes = keyText.getBytes();
+                // Konwertowanie danych wejściowych (w postaci hex) na bajty (tylko w przypadku tekstu nie z pliku)
+                byte[] encryptedData;
+                if (input == null){
+                    encryptedData = Helper.hexToBytes(inputDataField.getText());
+                }else {
+                    encryptedData = input;
+                }
 
-                // Sprawdzenie długości klucza
-                if (keyBytes.length != 16 && keyBytes.length != 24 && keyBytes.length != 32) {
+                KeyParam keyParam = chooseKeyParam(keyBytes.length);
+                if (keyParam == null){
                     resultArea.setText("Klucz musi mieć 16, 24 lub 32 bajty.");
                     return;
                 }
 
-                // Wybór rozmiaru klucza
-                KeyParam keyParam;
-                if (keyBytes.length == 16) {
-                    keyParam = KeyParam.SIZE_128;
-                } else if (keyBytes.length == 24) {
-                    keyParam = KeyParam.SIZE_192;
-                } else {
-                    keyParam = KeyParam.SIZE_256;
-                }
+                Aes aes = new Aes(keyParam, encryptedData, keyBytes);
 
-                // Inicjalizacja algorytmu AES
-                Aes aes = new Aes(keyParam, keyBytes);
-
-                // Wykonanie deszyfrowania
-                byte[] decryptedData = aes.doDecryption(encryptedData);
-
-                // Wyświetlenie wyniku
+                byte[] decryptedData = aes.doDecryption();
+                result = decryptedData;
                 resultArea.setText(new String(decryptedData));
+                input = null;
             } catch (Exception ex) {
                 resultArea.setText("Wystąpił błąd: " + ex.getMessage());
             }
         });
 
-        // Funkcja zapisu do pliku
-        saveButton.setOnAction(e -> {
+        saveButton.setOnAction(_ -> {
             try {
                 String resultText = resultArea.getText();
                 if (resultText.isEmpty()) {
@@ -135,11 +130,12 @@ public class AesApplication extends Application {
 
                 // Wybór lokalizacji pliku
                 FileChooser fileChooser = new FileChooser();
-                fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Text Files", "*.txt"));
                 File file = fileChooser.showSaveDialog(primaryStage);
 
                 if (file != null) {
-                    Files.write(file.toPath(), resultText.getBytes());
+                    FileOutputStream fos = new FileOutputStream(file);
+                    fos.write(result);
+                    fos.close();
                     resultArea.setText("Dane zapisane do pliku.");
                 }
             } catch (IOException ex) {
@@ -148,16 +144,20 @@ public class AesApplication extends Application {
         });
 
         // Funkcja wczytania z pliku
-        loadButton.setOnAction(e -> {
+        loadButton.setOnAction(_ -> {
             try {
                 // Wybór pliku do wczytania
                 FileChooser fileChooser = new FileChooser();
-                fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Text Files", "*.txt"));
                 File file = fileChooser.showOpenDialog(primaryStage);
 
                 if (file != null) {
-                    String content = new String(Files.readAllBytes(file.toPath()));
-                    resultArea.setText(content);
+                    FileInputStream fis = new FileInputStream(file);
+                    int length = fis.available();
+                    input = new byte[length];
+                    fis.read(input);
+                    fis.close();
+
+                    inputDataField.setText(new String(input));
                 }
             } catch (IOException ex) {
                 resultArea.setText("Wystąpił błąd przy wczytywaniu: " + ex.getMessage());
@@ -165,17 +165,25 @@ public class AesApplication extends Application {
         });
 
         // Funkcja generowania klucza AES
-        generateKeyButton.setOnAction(e -> {
+        generateKeyButton.setOnAction(_ -> {
             try {
-                // Generowanie klucza
-                Key key = Aes.generateKey();
-                keyField.setText(Base64.getEncoder().encodeToString(key.getEncoded()));
+                if (radio128.isSelected()) {
+                    // 128-bit key (16 bytes)
+                    keyField.setText("1234567890abcdef");
+                } else if (radio192.isSelected()) {
+                    // 192-bit key (24 bytes)
+                    keyField.setText("1234567890abcdef12345678");
+                } else if (radio256.isSelected()) {
+                    // 256-bit key (32 bytes)
+                    keyField.setText("1234567890abcdef1234567890abcdef");
+                }
             } catch (Exception ex) {
                 resultArea.setText("Wystąpił błąd przy generowaniu klucza: " + ex.getMessage());
             }
         });
 
         // Układ interfejsu
+        HBox radioBox = new HBox(20, radio128, radio192, radio256);
         VBox layout = new VBox(10);
         layout.setPadding(new javafx.geometry.Insets(20));
         layout.getChildren().addAll(
@@ -188,6 +196,8 @@ public class AesApplication extends Application {
                 saveButton,
                 loadButton,
                 generateKeyButton,
+                new Label("Wybierz rozmiar generowanego klucza:"),
+                radioBox,            // Our radio buttons
                 resultLabel,
                 resultArea
         );
@@ -198,6 +208,18 @@ public class AesApplication extends Application {
         // Ustawiamy scenę na oknie
         primaryStage.setScene(scene);
         primaryStage.show();
+    }
+
+    private KeyParam chooseKeyParam(int length) {
+        if (length == 16) {
+            return KeyParam.SIZE_128;
+        } else if (length == 24) {
+            return KeyParam.SIZE_192;
+        } else if (length == 32){
+            return KeyParam.SIZE_256;
+        }else {
+            return null;
+        }
     }
 
     public static void main(String[] args) {
