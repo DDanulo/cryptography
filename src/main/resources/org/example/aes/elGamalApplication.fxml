@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<!--  Simple ElGamal‑Demo UI  (без сторонніх бібліотек)  -->
+
+<VBox spacing="12" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.example.aes.view.ElGamalController">
+
+    <!-- Insets через окремий вузол, щоб уникнути помилки FXML‑парсера -->
+    <padding>
+        <Insets bottom="12" left="12" right="12" top="12" />
+    </padding>
+
+    <!-- Параметри p, g, x, y -->
+    <GridPane hgap="8" vgap="6">
+        <columnConstraints>
+            <ColumnConstraints halignment="RIGHT" />
+            <ColumnConstraints hgrow="ALWAYS" />
+        </columnConstraints>
+
+        <Label text="p:" GridPane.rowIndex="0" />
+        <TextField fx:id="pField" promptText="p" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+
+        <Label text="g:" GridPane.rowIndex="1" />
+        <TextField fx:id="gField" promptText="g" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+
+        <Label text="x (priv):" GridPane.rowIndex="2" />
+        <TextField promptText="x" GridPane.columnIndex="1" GridPane.rowIndex="2" fx:id="xField" />
+
+        <Label text="y (pub):" GridPane.rowIndex="3" />
+        <TextField fx:id="yField" promptText="y" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+        <Button fx:id="btnGenerateKeys" onAction="#onGenerateKeys" text="Generuj klucze" GridPane.columnIndex="1" GridPane.rowIndex="4" />
+
+        <rowConstraints>
+         <RowConstraints />
+         <RowConstraints />
+         <RowConstraints />
+         <RowConstraints />
+         <RowConstraints />
+      </rowConstraints>
+    </GridPane>
+
+    <!-- Область повідомлення та підпису -->
+    <HBox spacing="10">
+        <VBox spacing="4" HBox.hgrow="ALWAYS">
+            <Label text="Tekst do podpisu" />
+            <TextArea fx:id="messageArea" prefRowCount="8">
+            </TextArea>
+        </VBox>
+
+        <VBox spacing="4" HBox.hgrow="ALWAYS">
+            <Label text="Podpis (r,s)" />
+            <TextArea fx:id="signatureArea" prefRowCount="8">
+            </TextArea>
+        </VBox>
+    </HBox>
+   <HBox spacing="12">
+      <children>
+         <Button mnemonicParsing="false" onAction="#onSign" text="Podpisz" />
+         <Button mnemonicParsing="false" onAction="#onVerificate" text="Weryfikuj" />
+      </children>
+   </HBox>
+
+    <!-- Кнопки дій -->
+    <HBox spacing="12">
+        <Button fx:id="btnLoadMessage" onAction="#onReadDataFromFile" text="Wczytaj dane z pliku" />
+        <Button fx:id="btnSaveSignature" onAction="#onSignatureWriteToFile" text="Zapisz podpis do pliku" />
+        <Button fx:id="btnLoadSignature" onAction="#onSignatureReadFromFile" text="Wczytaj podpis z pliku" />
+    </HBox>
+</VBox>
