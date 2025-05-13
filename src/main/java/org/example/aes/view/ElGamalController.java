@@ -11,7 +11,6 @@ import org.example.aes.logic.ElGamal;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
@@ -52,8 +51,8 @@ public class ElGamalController {
         }
         pField.setText(elGamal.p.toString(16));
         gField.setText(elGamal.g.toString(16));
-        xField.setText(elGamal.x.toString(16));
-        yField.setText(elGamal.y.toString(16));
+        xField.setText(elGamal.a.toString(16));
+        yField.setText(elGamal.h.toString(16));
     }
 
     public void onReadDataFromFile(ActionEvent actionEvent)  {
@@ -106,7 +105,7 @@ public class ElGamalController {
             ensureElGamalFromFields();
             String msg = messageArea.getText();
             ElGamal.Signature sig = elGamal.sign(msg);
-            signatureArea.setText(sig.r().toString(16) + "\n" + sig.s().toString(16));
+            signatureArea.setText(sig.s1().toString(16) + "\n" + sig.s2().toString(16));
         } catch (Exception ex) {
             showAlert(Alert.AlertType.ERROR, "Błąd Podpisu", ex.getMessage());
         }
@@ -116,7 +115,7 @@ public class ElGamalController {
         try {
             ensureElGamalFromFields();
             String[] lines = signatureArea.getText().trim().split("\n|\r");
-            if (lines.length < 2) throw new IllegalArgumentException("Потрібно два рядки: r та s у hex-форматі");
+            if (lines.length < 2) throw new IllegalArgumentException("Потрібно два рядки: s1 та s2 у hex-форматі");
             BigInteger r = new BigInteger(lines[0].trim(), 16);
             BigInteger s = new BigInteger(lines[1].trim(), 16);
             ElGamal.Signature sig = new ElGamal.Signature(r, s);
@@ -141,8 +140,8 @@ public class ElGamalController {
 
             elGamal.p = p;
             elGamal.g = g;
-            elGamal.x = x;
-            elGamal.y = y;
+            elGamal.a = x;
+            elGamal.h = y;
         } catch (NumberFormatException nfe) {
             throw new IllegalArgumentException("p, g, x, y Powinny być liczbami hex");
         }
